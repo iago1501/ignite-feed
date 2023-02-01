@@ -1,46 +1,116 @@
-import { Avatar } from './Avatar'
-import { Comment } from './Comment'
-import styles from './Post.module.css'
+import { Avatar } from "./Avatar";
+import { Comment } from "./Comment";
+import styles from "./Post.module.css";
+import { format, formatDistanceToNow } from "date-fns";
+import ptBR from "date-fns/locale/pt-BR";
+import { useState } from "react";
 
-export function Post(){
-  return(
+export function Post({ author, content, publishedAt }) {
+  const [comments, setComments] = useState(["Post muito legal"]);
+
+  const [newCommentText, setNewCommentText] = useState("");
+
+  // const publishedDateFormatted = new Intl.DateTimeFormat('pt-BR', {
+  //   day: '2-digit',
+  //   month: 'long',
+  //   hour: '2-digit',
+  //   minute: '2-digit'
+  // }).format(publishedAt)
+
+  const publishedDateFormatted = format(
+    publishedAt,
+    "d 'de' LLLL 'às' HH:mm'h'",
+    {
+      locale: ptBR,
+    }
+  );
+
+  const publishedDateRelativeToNow = formatDistanceToNow(publishedAt, {
+    locale: ptBR,
+    addSuffix: true,
+  });
+
+  const handleCreateNewComment = () => {
+    event.preventDefault();
+
+    setComments([...comments, newCommentText], () => setNewCommentText(""));
+  };
+
+  const handleNewCommmentChange = () => {
+    event.target.setCustomValidity("");
+    setNewCommentText(event.target.value);
+  };
+
+  function deleteComment(commentToDelete) {
+    const commentsWithoutDeletedOne = comments.filter(comment => 
+      comment !== commentToDelete
+    );
+
+    setComments(commentsWithoutDeletedOne)
+
+  }
+
+  function handleNewCommentInvalid(){
+    event.target.setCustomValidity("Esse campo é obrigatório");
+  }
+
+  const isNewCommentEmpty = newCommentText.length === 0
+
+  return (
     <article className={styles.post}>
       <header>
-
         <div className={styles.author}>
-          <Avatar hasBorder src="https://avatars.githubusercontent.com/u/13649073?v=4"/>
+          <Avatar hasBorder src={author.avatarUrl} />
           <div className={styles.authorInfo}>
-            <strong>Nome</strong>
-            <span>Cargo</span>
+            <strong>{author.name}</strong>
+            <span>{author.role}</span>
           </div>
         </div>
 
-        <time title="20 de Janeiro de 2023 às 9:10h " dateTime='01-20-2023 09:10:53'>
-          Publicado há 1h
+        <time
+          title={publishedDateFormatted}
+          dateTime={publishedAt.toISOString()}
+        >
+          {publishedDateRelativeToNow}
         </time>
-
       </header>
 
       <div className={styles.content}>
-        <p>
-        Lorem ipsum dolor sit amet, consectetur adipisicing elit. Hic, quibusdam id? At dolor, assumenda magni laboriosam voluptatibus fugit totam ea ipsam quod? Voluptatibus quod ipsam nemo, vel eligendi atque eum.
-        </p>
+        {content.map(({ type, content }) =>
+          type === "paragraph" ? (
+            <p key={content}>{content}</p>
+          ) : (
+            <p key={content}>
+              <a>{content}</a>
+            </p>
+          )
+        )}
       </div>
 
-      <form className={styles.commentForm}>
+      <form onSubmit={handleCreateNewComment} className={styles.commentForm}>
         <strong>Deixe seu feedback</strong>
-        <textarea 
-          placeholder='Deixe um comentário'
+        <textarea
+          name="comment"
+          placeholder="Deixe um comentário"
+          value={newCommentText}
+          onChange={handleNewCommmentChange}
+          required
+          onInvalid={handleNewCommentInvalid}
         />
         <footer>
-          <button type='submit'>Publicar</button>
-        </footer>        
+          <button disabled={isNewCommentEmpty} type="submit">Publicar</button>
+        </footer>
       </form>
 
       <div className={styles.commentList}>
-        <Comment />
+        {comments.map((comment) => (
+          <Comment
+            key={comment}
+            onDeleteComment={deleteComment}
+            content={comment}
+          />
+        ))}
       </div>
-      
     </article>
-  )
+  );
 }
